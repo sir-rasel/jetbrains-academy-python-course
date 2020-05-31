@@ -1,0 +1,4 @@
+Tim 250
+Rasel 400
+Bob 300
+Alex 100
