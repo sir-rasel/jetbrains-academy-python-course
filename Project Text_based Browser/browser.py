@@ -11,7 +11,7 @@ dir_name = None
 previous_page = None
 
 def remove_last_if_current(url):
-    if history_stack[-1] is url:
+    if history_stack[-1] == url:
         history_stack.pop()
 
 def append_in_stack(url):
@@ -26,12 +26,14 @@ def make_directory():
         os.makedirs(dir_name)
 
 def read_file(file_name):
-    with open('{}/{}'.format(dir_name, file_name + '.txt'), 'r') as file:
+    file_name += '.txt'
+    with open('{}/{}'.format(dir_name, file_name), 'r', encoding="utf-8") as file:
         print(Fore.BLUE + file.read())
 
 def write_file(file_name, content):
-    with open('{}/{}'.format(dir_name, file_name + '.txt'), 'w') as file:
-        file.write(content)
+    file_name += '.txt'
+    with open('{}/{}'.format(dir_name, file_name), 'w', encoding="utf-8") as file_:
+        print(content, file=file_, flush=True)
 
 def get_absolute_url(url):
     url = url.strip()
