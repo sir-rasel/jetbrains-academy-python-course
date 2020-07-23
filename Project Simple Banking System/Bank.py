@@ -1,4 +1,5 @@
 import math
+import sqlite3
 
 class Bank:
     customer_account = dict()
@@ -8,17 +9,21 @@ class Bank:
     def __init__(self):
         self.banking_status = True
         self.customer_login_status = False
-    
+        self.database_connector = None
+        self.database_driver = None
+
     def __str__(self):
         if self.customer_login_status:
             return "1. Balance\n2. Log out\n0. Exit"
         else:
             return "1. Create an account\n2. Log into account\n0. Exit"
     def operation(self):
+        self.initialize_database()
+
         while self.banking_status:
             print(self)
             choice = int(input())
-            
+
             if choice == 0:
                 break
             elif self.customer_login_status:
@@ -28,7 +33,7 @@ class Bank:
                     self.customer_login_status = False
                     print('You have successfully logged out!')
             else:
-                if choice == 1:  
+                if choice == 1:
                     self.create_account()
                 else:
                     card_no = input('Enter your card number: ')
@@ -41,6 +46,12 @@ class Bank:
                         print('Wrong card number or PIN!')
         print('Bye!')
 
+    def initialize_database(self):
+        self.database_connector = sqlite3.connect('card.s3db')
+        self.database_driver = self.database_connector.cursor()
+        self.database_driver.execute('CREATE TABLE IF NOT EXISTS card (id INTEGER, number TEXT, pin TEXT, balance INTEGER DEFAULT 0);')
+        self.database_connector.commit()
+
     def create_account(self):
         card_no = str(Bank.CARD_NO)
         pin_no = str(Bank.PIN_NO)
@@ -52,12 +63,15 @@ class Bank:
 
         Bank.customer_account[card_no] = pin_no
         print(f"Your card has been created\nYour card number:\n{card_no}\nYour card PIN:\n{pin_no}")
-    
+
+        self.database_driver.execute(f"insert into card (id, number, pin) values ({4000}, {card_no}, {pin_no});")
+        self.database_connector.commit()
+
     def check_account_validity(self, card_no, pin_no):
         if Bank.customer_account.get(card_no, str(-1)) == pin_no:
             return True
         return False
-    
+
     def adding_luhan_checksum(self,card_no):
         bit = [int(x) for x in card_no]
         bit = [bit[i] * 2 if i % 2 == 0 else bit[i] for i in range(0, len(bit))]
@@ -65,7 +79,7 @@ class Bank:
 
         sumation = sum(bit)
         checksum = (math.ceil(sumation / 10) * 10) - sumation
-                
+
         return (card_no + str(checksum))
 
 if __name__ == '__main__':
