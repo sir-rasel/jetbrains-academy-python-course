@@ -1,149 +1,141 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, DATE
-from sqlalchemy.orm.session import sessionmaker
+from sqlalchemy import Column, Integer, String, Date
+from sqlalchemy.orm import sessionmaker
+
 from datetime import datetime, timedelta
 
-DATA_BASE_TYPE = 'sqlite'
-DATA_BASE_PATH = '.\\todo.db'
-CHECK_SAME_THREAD = False
-TableBase = declarative_base()
+# initialising the parent class for a table
+Base = declarative_base()
 
+class Task(Base):
+    """ This is ORM table class for sqlite database """
 
-class TableTask(TableBase):
-    __tablename__ = 'task'
+    __tablename__ = "task"
     id = Column(Integer, primary_key=True)
-    task = Column(String, default='New Task')
-    deadline = Column(DATE, default=datetime.today())
+    task = Column(String)
+    deadline = Column(Date, default=datetime.today())
 
     def __repr__(self):
-        return self.task
-
-    def __str__(self):
-        return self.__repr__()
+        """ Table rows with id and respective task """
+        return f"{self.id}. {self.task}"
 
 
-class DataBaseUtil:
-    """ DataBase Util """
-    Session = ""
+class To_Do_List:
+    """ This is To-do-list class with task handling operation """
 
-    def __init__(self, *args, **kwargs):
-        if "session_engine" in kwargs.keys():
-            DataBaseUtil.Session = kwargs['session_engine']
-        if DataBaseUtil.Session == "":
-            print("Error")
-            raise Exception("Session Error")
+    prompt = "1) Today's tasks\n2) Week's tasks\n3) All tasks\n4) Missed tasks\n5) Add task\n6) Delete task\n0) Exit\n"
 
-    @staticmethod
-    def insert(**kwargs):
-        session = DataBaseUtil.Session()
-        try:
-            if 'id' in kwargs.keys():
-                new_row = TableTask(id=kwargs['id'], task=kwargs['task'], deadline=kwargs['deadline'])
+    def __init__(self, db_name):
+        """ initialising the database and gui """
+
+        # table and database initialising
+        self.engine = create_engine(f"sqlite:///{db_name}.db?check_same_thread=False")
+        Base.metadata.create_all(self.engine)
+
+        # Session and interaction with database initialising
+        self.session = sessionmaker(bind=self.engine)()
+
+        # to-do-list gui initialising
+        self.choices = {'1': self.show_today_tasks, '2': self.show_week_tasks, '3': self.show_all_tasks,
+                        '4': self.show_missed_tasks, '5': self.add_task, '6': self.delete_task, '0': self.shutdown}
+        self.running = True
+        self.main()
+
+    def shutdown(self):
+        """ shuts down the program, by terminating the while loop and close the ORM session"""
+
+        self.running = False
+        self.session.close()
+        print('Bye!')
+
+    def show_today_tasks(self):
+        """ Give the todays task list if empty show 'Nothing to do' """
+
+        date_today = datetime.today()
+        month = date_today.strftime('%b')
+        day = date_today.day
+
+        tasks = self.session.query(Task).filter(Task.deadline == date_today.date()).all()
+        print(f"Today {day} {month}:")
+        for task in tasks:
+            print(task)
+        if not tasks:
+            print("Nothing to do!")
+
+    def add_task(self):
+        """ Adds a task to the database, with the deadline specified """
+
+        task = input('Enter task:\n')
+        deadline = datetime.strptime(input('Enter deadline:\n'), r'%Y-%m-%d')
+        self.session.add(Task(task=task, deadline=deadline))
+        self.session.commit()
+        print("The task has been added!")
+
+    def show_week_tasks(self):
+        """ Shows the tasks for this week with day if has not task show 'Nothing to do!' """
+
+        for date in (datetime.today() + timedelta(n) for n in range(7)):
+            day = date.day
+            day_name = date.strftime("%A")
+            month = date.strftime('%b')
+            tasks = self.session.query(Task).filter(Task.deadline == date.date()).all()
+            print(f"{day_name} {day} {month}:")
+            if tasks:
+                for i, task in enumerate(tasks, 1):
+                    print(f"{i}. {task.task}")
             else:
-                new_row = TableTask(task=kwargs['task'], deadline=kwargs['deadline'])
-            session.add(new_row)
-            session.commit()
-        except Exception():
-            print("Args Error")
-        finally:
-            session.close()
-
-    @staticmethod
-    def query(**kwargs):
-        session = DataBaseUtil.Session()
-        if 'filter' not in kwargs.keys():
-            kwargs['filter'] = True
-        if 'order_by' not in kwargs.keys():
-            kwargs['order_by'] = (False,)
-        rows = session.query(TableTask).filter(kwargs['filter']).order_by(*kwargs['order_by']).all()
-        session.close()
-        return rows
-
-
-class TodoList:
-    def __init__(self):
-        self.util = DataBaseUtil()
-
-    def get_task(self, during: int = 0):
-        today = datetime.today()
-        query_date = today
-        if during == -1:
-            index = 1
-            order_by = (TableTask.deadline,)
-            tasks = self.util.query(order_by=order_by)
-            for task in tasks:
-                print("{}. {}. {} {}".format(index, task.task, task.deadline.day, task.deadline.strftime('%b')))
-                index += 1
-
-            if len(tasks) == 0:
                 print("Nothing to do!")
             print()
+
+    def show_all_tasks(self,flag=True):
+        """ Shows every task with deadline existing in database """
+
+        if flag:
+            print("All tasks:")
+        tasks = self.session.query(Task).order_by(Task.deadline).all()
+        for task in tasks:
+            month = task.deadline.strftime('%b')
+            day = task.deadline.day
+            print(f"{task.id}. {task.task}. {day} {month}")
+        if not tasks:
+            print("Nothing to do!")
+
+    def show_missed_tasks(self):
+        """ This shows those tasks that missed its deadline """
+
+        print("Missed tasks:")
+        tasks = self.session.query(Task).filter(Task.deadline < datetime.today().date()).order_by(Task.deadline).all()
+        for task in tasks:
+            month = task.deadline.strftime('%b')
+            day = task.deadline.day
+            print(f"{task.id}. {task.task}. {day} {month}")
+        if not tasks:
+            print("Nothing to do!")
+
+    def delete_task(self):
+        """Funtion for deleting the tasks from database """
+
+        print("Chose the number of the task you want to delete:")
+        self.show_all_tasks(False)
+        number_of_deletion = int(input())
+
+        tasks = self.session.query(Task).order_by(Task.deadline).all()
+        if len(tasks) == 0:
+            print("Nothing to delete")
         else:
-            while query_date <= today + timedelta(days=during):
-                date_filter = TableTask.deadline == query_date.date()
-                order_by = (TableTask.deadline,)
-                tasks = self.util.query(filter=date_filter, order_by=order_by)
-                if during == 0:
-                    print("Today {} {}".format(query_date.date().day, query_date.date().strftime('%b')))
-                else:
-                    print("{} {} {}".format(query_date.date().strftime("%A"), query_date.date().day, query_date.date().strftime('%b')))
+            self.session.delete(tasks[number_of_deletion-1])
+            self.session.commit()
+            print("The task has been deleted!")
 
-                if len(tasks) == 0:
-                    print("Nothing to do!\n")
-                else:
-                    index = 1
-                    for task in tasks:
-                        print(f"{index}. {task.task}")
-                        index += 1
-                    print()
-                query_date += timedelta(days=1)
+    def main(self):
+        """ Driver function for all operation continuously running until manually stop """
 
-    def add_task(self, kwargs: dict):
-        self.util.insert(**kwargs)
+        while self.running:
+            choice = input(self.prompt)
+            print()
+            self.choices.get(choice, lambda: None)()
+            print() if choice not in {'0', '2'} else None
 
-    def run(self):
-        while True:
-            print("""1) Today's tasks\n2) Week's tasks\n3) All tasks\n4) Missed tasks\n5) Add task\n6) Delete Task\n0) Exit""")
-            func_select = input()
-            if func_select == '1':
-                self.get_task(0)
-            if func_select == '2':
-                self.get_task(6)  # add 6 days a week
-            if func_select == '3':
-                print("All tasks:")
-                self.get_task(-1)
-            elif func_select == '4':
-                print()
-            elif func_select == '5':
-                task = input("Enter task\n")
-                deadline = input("Enter deadline\n")
-                try:
-                    self.add_task({'task': task, 'deadline': datetime.strptime(deadline, '%Y-%m-%d')})
-                except ValueError:
-                    print(f"time data '{deadline}' does not match format '%Y-%m-%d'")
-                print("The task has been added!\n")
-            elif func_select == '6':
-                num = int(input("Chose the number of the task you want to delete:"))
-                self.get_task(-1)
-
-
-            elif func_select == '0':
-                print("Bye!")
-                exit()
-
-
-def init():
-    conn_engine = create_engine(f'{DATA_BASE_TYPE}:///{DATA_BASE_PATH}?check_same_thread={CHECK_SAME_THREAD}')
-    TableBase.metadata.create_all(conn_engine)
-    util = DataBaseUtil(session_engine=sessionmaker(bind=conn_engine))
-
-
-def main():
-    init()
-    my_list = TodoList()
-    my_list.run()
-
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    To_Do_List('todo')
