@@ -1,0 +1,7 @@
+{% extends "news/publication.html" %}
+{% block content %}
+    <h2>{{ article.title }}</h2>
+    <p>{{ article.created }}</p>
+    <p>{{ article.text }}</p>
+    <a href="/news/">News</a>
+{% endblock content %}
