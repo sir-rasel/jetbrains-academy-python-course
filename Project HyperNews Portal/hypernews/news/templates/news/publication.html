@@ -1,8 +1,14 @@
 {% extends "news/layout.html" %}
 {% block content %}
-    {% for article in articles %}
-        <h2>{{ article.title }}</h2>
-        <p>{{ article.created }}</p>
-        <p>{{ article.text }}</p>
+    {% regroup articles | dictsortreversed:"created" by created | slice:":-9" as news_list %}
+    {% for news in news_list %}
+        <h4>{{ news.grouper }}</h4>
+
+        <ul>
+          {% for i in news.list %}
+          <li><a href="/news/{{i.link}}">{{ i.title }}</a></li>
+          {% endfor %}
+        </ul>
     {% endfor %}
+    <a href="/news/create/">Post</a>
 {% endblock content %}
