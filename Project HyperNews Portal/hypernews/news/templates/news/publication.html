@@ -1,6 +1,6 @@
 {% extends "news/layout.html" %}
 {% block content %}
-    {% regroup articles | dictsortreversed:"created" by created | slice:":-9" as news_list %}
+    {% regroup articles|dictsortreversed:"created" by created|slice:":-9" as news_list %}
     {% for news in news_list %}
         <h4>{{ news.grouper }}</h4>
 

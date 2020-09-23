@@ -18,7 +18,7 @@ from django.urls import path, include
 from news.views import ComingSoon
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', ComingSoon.as_view()),
+    path('admin/', admin.site.urls, name='admin-page'),
+    path('', ComingSoon.as_view(), name='root-page'),
     path('news/', include('news.urls')),
 ]

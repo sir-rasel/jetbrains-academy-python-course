@@ -1,0 +1,14 @@
+{% extends "news/layout.html" %}
+{% block content %}
+    <form method="post">
+        {%csrf_token%}
+        <label>Title</label>
+        <input name="title" type="text">
+        <br>
+        <label>Text</label>
+        <input name="text" type="text">
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+    <a href="/news/">News</a>
+{% endblock content %}
