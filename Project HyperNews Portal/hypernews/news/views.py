@@ -12,27 +12,33 @@ with open(settings.NEWS_JSON_PATH, 'r') as json_file:
 
 class ComingSoon(View):
     def get(self, request):
-        return HttpResponse("Coming soon")
+        return redirect('main-page')
 
 
 class MainView(View):
     def get(self, request):
-        context = {'articles': articles}
-        return render(
-            request, 'news/publication.html', context
-        )
+        result = list()
+        
+        query = request.GET.get('q')
+        if query:
+            for article in articles:
+                if query in article['title']:
+                    result.append(article)
+            context = {'articles': result}
+            return render(request, 'news/publication.html', context)
+        else:
+            context = {'articles': articles}
+            return render(request, 'news/publication.html', context)
 
 
 class SingleView(View):
     def get(self, request, article_link):
         context = {}
         for article in articles:
-            if article['link'] == int(article_link):
+            if article['link'] == article_link:
                 context = {'article': article}
 
-        return render(
-            request, 'news/news_content.html', context
-        )
+        return render(request, 'news/news_content.html', context)
 
 class CreateNews(View):
     def get(self, request):

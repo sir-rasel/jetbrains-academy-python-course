@@ -16,9 +16,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from news.views import ComingSoon
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls, name='admin-page'),
     path('', ComingSoon.as_view(), name='root-page'),
     path('news/', include('news.urls')),
 ]
+
+urlpatterns += static(settings.STATIC_URL)
