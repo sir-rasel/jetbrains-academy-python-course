@@ -15,9 +15,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from tickets.views import WelcomeView
+from tickets.views import WelcomeView, MenuView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('welcome/', WelcomeView.as_view()),
+    path('menu/', MenuView.as_view()),
 ]
