@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import ServiceTemplate
+from .views import ServiceView
 
 urlpatterns = [
-    path('<str:operation>/', ServiceTemplate.as_view(), name="service"),
+    path('<str:service>/', ServiceView.as_view(), name="service"),
 
 ]

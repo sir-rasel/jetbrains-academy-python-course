@@ -1,0 +1,12 @@
+{% extends 'tickets/layout.html' %}
+
+{% block content %}
+    {% for line, length in lines.items %}
+        <div>{{ line }} queue: {{ length }}</div>
+    {% endfor %}
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Process next</button>
+    </form>
+{% endblock %}
