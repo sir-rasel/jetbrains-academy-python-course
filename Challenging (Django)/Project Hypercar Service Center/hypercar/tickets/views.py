@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views import View
 from collections import deque
 from django.views.generic.base import TemplateView
@@ -6,7 +6,9 @@ from math import inf
 
 services_and_time = (('change_oil', 2), ('inflate_tires', 5), ('diagnostic', 30))
 line_queue = {service[0]: deque() for service in services_and_time}
-processed = 0
+ticket_no = 0
+next_client = list()
+
 
 class WelcomeView(View):
     def get(self, request, *args, **kwargs):
@@ -26,6 +28,15 @@ class ProcessingView(TemplateView):
                             'Get diagnostic': len(line_queue['diagnostic'])}
         return context
 
+    def post(self, request, *args, **kwargs):
+        global next_client
+        next_client = ServiceManagingOperation.choose_next_client()
+
+        if next_client:
+            line_queue[next_client[0]].popleft()
+        
+        return redirect('next')
+
 class ServiceView(View):
     def get(self, request, *args, **kwargs):
         service = kwargs['service']
@@ -33,10 +44,28 @@ class ServiceView(View):
         ticket = ServiceManagingOperation.get_ticket(service)
         return render(request, 'tickets/customer_queue.html', {'ticket': ticket, 'time': time})
 
+class NextClientView(View):
+    def get(self, request, *args, **kwargs):
+        massage = None
+        if next_client:
+            massage = f'Next ticket #{next_client[1]}'
+        else:
+            massage = 'Waiting for the next client'
+        return render(request, 'tickets/next.html', {'massage': massage})
+
 class ServiceManagingOperation:
     @staticmethod
+    def choose_next_client():
+        for service in line_queue.keys():
+            if len(line_queue[service]) != 0:
+                return [service, line_queue[service][0]]
+        return list()
+
+    @staticmethod
     def ticket_number():
-        return processed + sum(len(line_queue[service[0]]) for service in services_and_time)
+        global ticket_no
+        ticket_no += 1
+        return ticket_no
 
     @staticmethod
     def minutes_to_wait(service):
@@ -52,5 +81,5 @@ class ServiceManagingOperation:
     @staticmethod
     def get_ticket(service):
         ticket_number = ServiceManagingOperation.ticket_number()
-        line_queue[service].appendleft(ticket_number)
+        line_queue[service].append(ticket_number)
         return ticket_number

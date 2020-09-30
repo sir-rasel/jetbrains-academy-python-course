@@ -22,6 +22,7 @@ urlpatterns = [
     path('welcome/', WelcomeView.as_view(), name='welcome-page'),
     path('menu/', MenuView.as_view(), name='menu-page'),
     path('processing/', ProcessingView.as_view(), name='process-page'),
+    path('next/', NextClientView.as_view(), name='next'),
     path('get_ticket/', include('tickets.urls')),
 
 ]
