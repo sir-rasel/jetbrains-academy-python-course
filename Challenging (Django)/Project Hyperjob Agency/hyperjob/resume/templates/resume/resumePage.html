@@ -1,0 +1,7 @@
+{% extends 'resume/layout.html' %}
+
+{% block content %}
+    {% for resume in resumes %}
+        <div>{{ resume.author }}: {{ resume.description }}</div>
+    {% endfor %}
+{% endblock %}
